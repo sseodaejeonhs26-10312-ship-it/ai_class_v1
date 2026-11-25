@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#216447">
+  <title>한끼온 · 우리 학교 식사 기록</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="header wrap">
+    <a class="brand" href="./index.html"><span class="brand-icon" aria-hidden="true">🍀</span> 한끼온</a>
+    <span class="badge">우리 학교 식사 노트</span>
+  </header>
+  <main class="wrap">
+    <div class="intro"><p class="eyebrow">매일 조금씩, 골고루</p><h1>오늘의 한 끼를 기록해요.</h1><p>먹은 메뉴를 누르면 기록 끝. 나의 취향에 맞는 다음 한 끼도 찾아보세요.</p></div>
+    <p class="notice">체험용 앱입니다. 급식·매점 메뉴와 영양 수치는 예시이며 실제 학교 데이터와 연결되어 있지 않습니다.</p>
+    <p id="storage-warning" class="notice" role="alert" hidden>브라우저 저장 공간을 사용할 수 없어 이번에 입력한 내용은 창을 닫으면 사라질 수 있습니다.</p>
+    <div class="layout">
+      <aside>
+        <section class="card profile">
+          <h2>나의 프로필</h2><p class="muted">내 정보와 좋아하는 음식 종류를 알려주세요.</p>
+          <form id="profile-form">
+            <div class="form-grid">
+              <label>키 (cm)<input name="height" type="number" min="100" max="230" step="0.1" required placeholder="예: 165"></label>
+              <label>몸무게 (kg)<input name="weight" type="number" min="20" max="250" step="0.1" required placeholder="예: 55"></label>
+              <label>만 나이<input name="age" type="number" min="13" max="18" step="1" required placeholder="13~18"></label>
+              <label>계산식 기준 성별<select name="sex" required><option value="">선택</option><option value="female">여성</option><option value="male">남성</option></select></label>
+            </div>
+            <label>평소 활동량<select name="activity" required><option value="inactive">주로 앉아서 생활</option><option value="low">가벼운 일상 활동</option><option value="active">활동적인 생활</option><option value="very">매우 활동적인 생활</option></select></label>
+            <label>좋아하는 종류<select name="like" id="like"><option value="">특별히 없어요</option></select></label>
+            <label>피하고 싶은 종류 <span class="muted">(취향)</span><select name="avoid" id="avoid"><option value="">특별히 없어요</option></select></label>
+            <fieldset class="plan-fields">
+              <legend>성장·식사 상담 준비</legend>
+              <p class="small muted">체중이 고민되면 영양교사와 함께 살펴봐요. 아래 항목은 선택 사항이에요.</p>
+              <label>희망 몸무게 (kg · 상담용)<input name="desiredWeight" type="number" min="1" max="500" step="0.1" placeholder="선택 입력" aria-describedby="weight-note"></label>
+              <p id="weight-note" class="small muted">상담 때 이야기할 메모예요. 앱이 권장하는 목표 체중이 아니에요.</p>
+              <label>실천하고 싶은 식사 습관<select name="habit"><option value="">아직 정하지 않았어요</option><option value="regular">끼니를 거르지 않고 규칙적으로 먹기</option><option value="variety">여러 종류의 음식을 골고루 먹기</option><option value="signals">배고픔과 포만감을 살피며 먹기</option></select></label>
+              <label>다음 상담 날짜<input name="reviewDate" type="date" aria-describedby="review-note"></label>
+              <p id="review-note" class="small muted">성장과 식습관을 함께 점검할 날이에요. 목표 체중 도달 예정일이 아니에요.</p>
+            </fieldset>
+            <button class="primary" type="submit">프로필 저장</button>
+            <p id="profile-status" class="form-status" role="status"></p>
+          </form>
+          <details class="help"><summary>열량은 어떻게 계산하나요?</summary><p>13~18세의 나이·성별·키·몸무게·활동량을 반영하는 <a href="https://www.canada.ca/en/health-canada/services/food-nutrition/healthy-eating/dietary-reference-intakes/tables/equations-estimate-energy-requirement.html" target="_blank" rel="noopener noreferrer">DRI 에너지 필요량 추정식</a>을 사용합니다. 활동량 선택은 간단한 자기 평가이며, 결과는 참고용 추정치입니다. 성장기 학생의 체중 감량 목표나 섭취 상한선으로 사용하지 마세요. 개인별 기준은 영양교사와 상의해 주세요.</p></details>
+        </section>
+        <button id="reset" class="text-button reset" type="button">프로필과 전체 기록 삭제</button>
+        <p class="privacy">입력한 정보는 이 브라우저에만 저장됩니다. 공용 기기에서는 사용 후 삭제해 주세요.</p>
+      </aside>
+      <div class="main-column">
+        <section class="card overview" aria-labelledby="overview-title">
+          <div class="section-heading"><h2 id="overview-title">오늘의 기록</h2><time id="today"></time></div>
+          <div class="stats"><div><span>기록한 열량</span><strong id="total">0 <small>kcal</small></strong></div><div><span>하루 필요량 추정</span><strong id="target">—</strong></div><div><span id="difference-label">추정치까지</span><strong id="remaining">—</strong></div></div>
+          <progress id="progress" max="100" value="0" aria-label="하루 필요량 추정치 대비 기록한 열량"></progress>
+          <p id="feedback" class="muted">프로필을 저장하면 하루 필요량 추정치와 비교할 수 있어요.</p>
+          <p class="small muted">여기에 기록한 음식만 합산해요. 아침·저녁 등 빠진 식사가 있으면 실제 섭취량과 달라요.</p>
+        </section>
+        <section class="card growth-plan" aria-labelledby="growth-plan-title">
+          <div class="section-heading"><h2 id="growth-plan-title">성장과 식사 계획</h2><span class="badge">상담용</span></div>
+          <p id="plan-status" class="small muted">프로필을 저장하면 상담할 내용을 여기에 모아 보여드려요.</p>
+          <dl class="plan-summary">
+            <div><dt>평균 몸무게는?</dt><dd>키·몸무게만으로 개인의 적정 체중이나 평균 체중을 정할 수 없어요. 청소년은 나이·성별에 따른 성장도표와 성장 경과를 함께 살펴봐요. 평균값은 개인의 목표 체중이 아니에요.</dd></div>
+            <div><dt>희망 몸무게 메모</dt><dd id="desired-weight-summary">입력하지 않았어요. 숫자를 정하지 않아도 사용할 수 있어요.</dd></div>
+            <div><dt>어떻게 먹을까요?</dt><dd>끼니를 거르지 않고, 곡류·채소·단백질 식품 등 다양한 음식을 먹어요. 개인에게 필요한 식사량은 영양교사나 의료진과 함께 정해요.</dd></div>
+            <div><dt>나의 식사 습관</dt><dd id="habit-summary">작게 시작할 수 있는 습관을 프로필에서 선택해 보세요.</dd></div>
+            <div><dt>얼마나 이어갈까요?</dt><dd>성장 속도와 건강 상태에 따라 달라서 체중 변화 기간을 자동으로 계산하지 않아요. 식사량과 점검 간격은 상담을 통해 정해요.<span id="review-summary" class="review-summary"></span></dd></div>
+          </dl>
+          <p class="small muted">이 메모는 하루 필요량 추정치를 변경하지 않아요. 희망 체중에 맞춰 섭취량을 줄이거나 늘리는 계산은 제공하지 않습니다.</p>
+          <div class="plan-links"><a href="https://knhanes.kdca.go.kr/knhanes/grtcht/main.do" target="_blank" rel="noopener noreferrer">질병관리청 성장도표 안내</a><a href="https://www.niddk.nih.gov/health-information/weight-management/take-charge-health-guide-teenagers" target="_blank" rel="noopener noreferrer">청소년 식사·성장 안내</a></div>
+        </section>
+        <section class="card" aria-labelledby="menu-title">
+          <div class="section-heading"><h2 id="menu-title">무엇을 먹었나요?</h2><span class="muted small">메뉴 한 번 = 1인분 추가</span></div>
+          <div class="tabs" role="group" aria-label="메뉴 종류"><button type="button" class="tab active" data-source="lunch" aria-pressed="true">오늘 급식 · 예시</button><button type="button" class="tab" data-source="store" aria-pressed="false">매점 간식 · 예시</button><button type="button" class="tab" data-source="custom" aria-pressed="false">음식 직접 입력</button></div>
+          <div id="menu" class="menu-grid"></div>
+          <div id="food-entry" hidden>
+            <div class="search-fields">
+              <label for="food-search">음식 이름<input id="food-search" type="search" maxlength="60" placeholder="예: 김밥, 떡볶이, 사과" aria-describedby="search-help" autocomplete="off"></label>
+              <label for="food-servings">먹은 양 (인분)<input id="food-servings" type="number" min="0.1" max="20" step="0.1" value="1" required></label>
+            </div>
+            <p id="search-help" class="small muted">이름을 입력하면 예시 열량이 나와요. 먹은 양을 바꾼 뒤 검색 결과를 누르면 기록됩니다.</p>
+            <p id="search-status" class="small muted" role="status" aria-live="polite"></p>
+            <div id="search-results" class="menu-grid"></div>
+            <p class="small muted">앱에 등록된 예시 음식만 조회합니다. 실제 열량은 조리법·제품·양에 따라 달라요.</p>
+            <details id="manual-entry" class="help manual-entry">
+              <summary>찾는 음식이 없나요? 직접 추가하기</summary>
+              <form id="custom-food-form">
+                <label>추가할 음식 이름<input name="foodName" maxlength="60" required placeholder="예: 우리 집 볶음밥"></label>
+                <div class="form-grid">
+                  <label>먹은 양 설명<input name="portion" maxlength="40" required placeholder="예: 반 공기"></label>
+                  <label>먹은 양의 총 열량 (kcal)<input name="kcal" type="number" min="0" max="20000" step="1" required placeholder="예: 250"></label>
+                </div>
+                <p class="small muted">제품 포장지나 확인한 영양 정보를 입력해 주세요. 모르는 음식의 열량을 자동으로 추측하지 않습니다.</p>
+                <button type="submit" class="primary">직접 입력한 음식 기록</button>
+                <p id="custom-food-status" class="form-status" role="status"></p>
+              </form>
+            </details>
+          </div>
+        </section>
+        <section class="card recommendation" aria-labelledby="recommend-title">
+          <div class="section-heading"><h2 id="recommend-title">다음엔 이런 메뉴 어때요?</h2><span class="badge">취향 추천</span></div>
+          <p id="taste" class="muted"></p><div id="recommendations" class="recommend-grid"></div>
+          <p class="small muted">예시 메뉴 안에서 취향과 기록을 비교하는 규칙 기반 추천이에요. 알레르기 안전성을 판단하지 않습니다.</p>
+        </section>
+        <section class="card" aria-labelledby="records-title"><div class="section-heading"><h2 id="records-title">오늘 먹은 메뉴</h2><span id="record-count" class="muted small"></span></div><ul id="records" class="records"></ul></section>
+        <section class="card" aria-labelledby="week-title"><h2 id="week-title">최근 7일 기록</h2><p class="muted small">저장된 식사의 열량 합계 · kcal</p><div id="week" class="week"></div></section>
+      </div>
+    </div>
+  </main>
+  <footer class="wrap">한끼온 · 좋아하는 음식과 함께, 건강한 학교생활</footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><p class="notice wrap">이 앱을 사용하려면 브라우저에서 JavaScript를 허용해 주세요.</p></noscript>
+</body>
+</html>
